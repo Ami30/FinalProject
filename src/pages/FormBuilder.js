@@ -1,5 +1,5 @@
-import React, {useState, useEffect} from 'react';
-import { Button, Form, FormGroup, Label, Input, Container, Row, Col, Card, CardBody } from 'reactstrap';
+import React, {useState} from 'react';
+import { Button, Form, FormGroup, Label, Input, Container, Row, Col, Card, CardBody,ListGroup, ListGroupItem  }  from 'reactstrap';
 import { validateInput } from '../utils/validations';
 import axios from 'axios';
 import { ROUTES } from '../routes';
@@ -11,22 +11,18 @@ const choices_data = ["Asia", "Europe", "Africa", "Americas"];
 
 function FormBuilder() {
     
-    //formdata
+    //FORM_DATA is the default data mentioned in the imports which is the initial state of the form on first load.
+    //formData is the key to store value of FORM_DATA
     const [formData, setFormData] = useLocalStorageState('formData', FORM_DATA);
 
+    //When there will be any change in formData, this function will be called to update the fields in the session
     const changeFormData = ({field, value}) =>{
         let temp = {};
 
         if(formData != null){
-            if(!!formData.formData){
-                // retrieve from session
-                temp = {...formData.formData}
-            }else{
-                // retrieve while user is interacting with form
-                temp = {...formData}
-            }
+            temp = {...formData}
         };
-
+        
         const tempFormData = {...temp, [field] : value};
         setFormData(tempFormData);
     }
@@ -57,79 +53,130 @@ function FormBuilder() {
     //isMultiSelect
     const [isMultiSelect, setIsMultiSelect] = useState(() => formData != null ? formData.isMultiSelect : true);
 
-    //chnage handler for isMultiSelect
+    //change handler for isMultiSelect
     const handleMultiSelectChange = (e) =>{
         const value = e.target.checked;
         setIsMultiSelect(value);
         changeFormData({field : "isMultiSelect" , value});
     }
 
-    //choices
+    //choices(Initially it will be autopopulated with default value)
     const [choices, setChoices] = useState(() => formData != null ? formData.choices : choices_data);
 
 
     // Function for saving the choices
     const saveChoices = () =>{
+        // If the choices are greater than 50 then user will get an error while saving
         if(choices.length < 50){
-            if(!choices.includes(defaultValue)){
+            // declared a temporary variable to check the case sensitive choice value
+                let add=true;
+                for(let i=0;i<choices.length;i++){
+                    // checking case sensitivity
+                    if((choices[i].toLowerCase()===defaultValue.toLowerCase())){
+                        add=false;
+                    }
+
+                   
+                }
+                // If the data is not presesnt after checking case sensitivity then add the data
+                if(add===true && defaultValue!=='' && defaultValue!==null){
                 setChoices([...choices, defaultValue]);
+                // updating data in session
                 changeFormData({field : "choices" , value : [...choices, defaultValue]});
-               
-            }else{
-                toast.error(defaultValue + " already exists in list!");
-                // console.log("Option already included");
-            }
+                }
+                else if(defaultValue==='' || defaultValue===null){
+                    // If default value is empty then give error notification
+                    toast.error("Oops! Your Default Value is empty");
+                    return;
+                }
+                else{
+                    // If data is already exists in the array give an error notification
+                    toast.error(defaultValue + " already exists in list!");
+                    return;
+                }
+
         }else{
+            // If there are more than 50 choices then give error notification
             toast.error("Oops! You cannot add more than 50 choices");
+            return;
         }
     }
 
     // Function for deleting choices
     const deleteChoices = () =>{
-        
-            if(choices.includes(defaultValue)){
-                choices.splice(choices.indexOf(defaultValue),1)
+        // Check if the choice is present in selectedValue
+        if(selectedValue!==null || selectedValue!==''){
+            // if the choice is present then delete it
+            if(choices.includes(selectedValue)){
+                choices.splice(choices.indexOf(selectedValue),1)
                 setChoices([...choices]);
+                // Store the changes in session
                 changeFormData({field : "choices" , value : [...choices]});
-               
+                // set selected value is null as we deleted it above
+                setSelectedValue(null);
+                // set delete button disablity as true
+                setdeletedisabled(true);
             }else{
-                toast.error(defaultValue + " is not present in the list");              
+                // In case the selected value is not present in the choices array then give error notification
+                toast.error(selectedValue + " is not present in the list");              
             }
-       
-    }
- 
-    //selected choice value
-    const [choicesValue, setChoicesValue] = useState(() => formData != null ? formData.choicesValue : choices[0]);
-
-    //change handler for choices
-    const handleChoiceChange = (e) =>{
-        const value = e.target.value;
-        setChoicesValue(value);
-        changeFormData({field : "choicesValue" , value});
+        }
+        else{
+            // If user has not selected any choice to delete then give error notification
+            toast.error("Please select a choice to delete"); 
+        }
+            
     }
 
-    //order
+
+    //Setting order of choices
     const [order, setOrder] = useState(() => formData != null ? formData.order : "NA");
 
     //change handler for orderchange
     const handleOrderchange = (e) =>{
         const value = e.target.value;
-        setOrder(value);
-        changeFormData({field : "order" , value});
         if(value!=="NA"){
+            // Sorting the choices alphabetically
             choices.sort();
         }
+        else{
+            // Randomly shuffling the choices
+            choices.sort(() => Math.random() - 0.5);
+        }
+        setOrder(value);       
+        // storing data in session 
+        changeFormData({field : "order" , value});
+       
     }
-
-    useEffect(() => {
-        setChoicesValue(defaultValue);
-        changeFormData({field : "choicesValue" , value : defaultValue});
-    }, [defaultValue]);
 
     // Hit api and send form data to server
     const saveForm = () =>{
-        if(validateInput(inputLabel, "label") && !loading){
+        if(isMultiSelect===true){
+        // Validate label and default value first
+        if(validateInput(inputLabel, "label") && validateInput(defaultValue, "defaultValue") && !loading){
+            // set button loading as true
             setLoading(true);
+            // Again checking if user has entered a default value which is not in choices. If not then adding the value to choices.
+            if(choices.length < 50){
+                 // declared a temporary variable to check the case sensitive choice value
+                let add=true;                
+                for(let i=0;i<choices.length;i++){
+                     // checking case sensitivity
+                    if((choices[i].toLowerCase()===defaultValue.toLowerCase())){
+                        add=false;
+                    }                 
+                }
+                if(add===true && defaultValue!=='' && defaultValue!==null){
+                setChoices([...choices, defaultValue]);
+                // updating data in session
+                changeFormData({field : "choices" , value : [...choices, defaultValue]});
+                }               
+
+        }else{
+            // if user tries to enter more than 50 choices give error notification
+            toast.error("Oops! You cannot add more than 50 choices");
+            return;
+        }
             const data = {
                 label : inputLabel,
                 required : isMultiSelect,
@@ -152,10 +199,16 @@ function FormBuilder() {
                 console.log(error);
                 toast.error(error.message);
               });
+
+
         }
     }
+    else{
+        toast.error("Please check multi-select");
+    }
+    }
 
-    //function for restting the form
+    //function for resetting the form
 
     const resetForm = () =>{
         setinputLabel("");
@@ -164,6 +217,12 @@ function FormBuilder() {
         setLoading(false);
         setOrder("NA");
     }
+
+    // Declared constant for getting selected value from the Choices list 
+    const [selectedValue,setSelectedValue]=useState();
+    // Initially delete button will be disabled 
+    const [deletedisabled,setdeletedisabled]=useState(true);
+    
 
     return (
         <Container>
@@ -215,18 +274,28 @@ function FormBuilder() {
                                         </Col>
                                         <Col lg={2} sm={2}>
                                         <br/>
-                                            <Button color="danger" size="md" onClick={deleteChoices}>Delete</Button> 
+                                            <Button color="danger" size="md" disabled={deletedisabled} onClick={deleteChoices}>Delete</Button> 
                                         </Col>
                                     </Row>
                                 </FormGroup>
                                 <br/>
                                     <FormGroup>
                                         <Label for="choices">Choices</Label>
-                                        <Input type="select" name="select" id="choices" value={choicesValue} onChange={handleChoiceChange}>
-                                            {choices.map(item => <option key={item} value={item}>{item}</option>)}
-                                        </Input>
+
+                                        <ListGroup>
+                                          {
+                                              
+                                              choices.map(
+                                                  (choice,i) =>{
+                                                      return <ListGroupItem key={i} onClick={()=>{setSelectedValue(choice); setdeletedisabled(false)}} style={{backgroundColor: selectedValue === choice ? 'lightgray': 'white'}}> {choice}</ListGroupItem>
+                                                  }
+                                              )
+                                          }
+                                        </ListGroup>
+                                        
                                     </FormGroup>
                                 <br/>
+                               
                                     <FormGroup>
                                         <Label for="choices">Order</Label>
                                         <Input type="select" name="select" id="choices" value={order} onChange={handleOrderchange}>

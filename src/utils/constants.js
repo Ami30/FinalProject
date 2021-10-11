@@ -1,5 +1,4 @@
 export const FORM_DATA = {
-    "choicesValue": "Asia",
     "label": "Sales Region",
     "isMultiSelect": true,
     "defaultValue": "Asia",
@@ -10,5 +9,5 @@ export const FORM_DATA = {
         "Americas",
         "UK"
     ],
-    "order": "Display choices in alphabetical order"
+    "order": "NA"
 };
