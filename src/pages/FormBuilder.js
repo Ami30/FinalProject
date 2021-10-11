@@ -15,7 +15,7 @@ function FormBuilder() {
     //formData is the key to store value of FORM_DATA
     const [formData, setFormData] = useLocalStorageState('formData', FORM_DATA);
 
-    //When there will be any change in formData, this function will be called to update the fields in the session
+    //When there will be any change in formData, this function will be called to update the fields in the local storage
     const changeFormData = ({field, value}) =>{
         let temp = {};
 
@@ -81,7 +81,7 @@ function FormBuilder() {
                 // If the data is not presesnt after checking case sensitivity then add the data
                 if(add===true && defaultValue!=='' && defaultValue!==null){
                 setChoices([...choices, defaultValue]);
-                // updating data in session
+                // updating data in local storage
                 changeFormData({field : "choices" , value : [...choices, defaultValue]});
                 }
                 else if(defaultValue==='' || defaultValue===null){
@@ -110,7 +110,7 @@ function FormBuilder() {
             if(choices.includes(selectedValue)){
                 choices.splice(choices.indexOf(selectedValue),1)
                 setChoices([...choices]);
-                // Store the changes in session
+                // Store the changes in local storage
                 changeFormData({field : "choices" , value : [...choices]});
                 // set selected value is null as we deleted it above
                 setSelectedValue(null);
@@ -144,7 +144,7 @@ function FormBuilder() {
             choices.sort(() => Math.random() - 0.5);
         }
         setOrder(value);       
-        // storing data in session 
+        // storing data in local storage 
         changeFormData({field : "order" , value});
        
     }
@@ -168,7 +168,7 @@ function FormBuilder() {
                 }
                 if(add===true && defaultValue!=='' && defaultValue!==null){
                 setChoices([...choices, defaultValue]);
-                // updating data in session
+                // updating data in local storage
                 changeFormData({field : "choices" , value : [...choices, defaultValue]});
                 }               
 
